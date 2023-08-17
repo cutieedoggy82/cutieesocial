@@ -2,20 +2,34 @@ const express = require('express');
 const bodyParser = require('body-parser');
 const marked = require('marked');
 const sanitizeHtml = require('sanitize-html');
-const fs = require('fs').promises;
-const path = require('path');
+const mongoose = require('mongoose');
 const app = express();
 
 app.use(express.static('public'));
 app.use(bodyParser.json());
 
+// Connect to MongoDB
+mongoose.connect('mongodb://localhost:27017/cutieesocial', {
+    useNewUrlParser: true,
+    useUnifiedTopology: true,
+});
+
+// Define a schema for posts
+const postSchema = new mongoose.Schema({
+    content: String,
+    likes: Number,
+});
+
+// Create a model based on the schema
+const Post = mongoose.model('Post', postSchema);
+
 // Handle requests for different routes
 app.get('/', (req, res) => {
-    res.sendFile(path.join(__dirname, 'public', 'index.html'));
+    res.sendFile(__dirname + '/public/index.html');
 });
 
 app.get('/post', (req, res) => {
-    res.sendFile(path.join(__dirname, 'public', 'post.html'));
+    res.sendFile(__dirname + '/public/post.html');
 });
 
 app.post('/addPost', async (req, res) => {
@@ -29,13 +43,8 @@ app.post('/addPost', async (req, res) => {
     const postHTML = marked(sanitizedContent);
 
     try {
-        const databasePath = path.join(__dirname, 'src', 'database.json');
-        const currentPosts = JSON.parse(await fs.readFile(databasePath, 'utf-8'));
-
-        const newPost = { content: postHTML, likes: 0, id: new Date().getTime().toString() };
-        currentPosts.push(newPost);
-
-        await fs.writeFile(databasePath, JSON.stringify(currentPosts, null, 2));
+        const newPost = new Post({ content: postHTML, likes: 0 });
+        await newPost.save();
 
         res.status(200).send(newPost);
     } catch (error) {
@@ -48,13 +57,10 @@ app.post('/likePost', async (req, res) => {
     const postId = req.body.id;
 
     try {
-        const databasePath = path.join(__dirname, 'src', 'database.json');
-        const currentPosts = JSON.parse(await fs.readFile(databasePath, 'utf-8'));
-
-        const post = currentPosts.find(item => item.id === postId);
+        const post = await Post.findById(postId);
         if (post) {
             post.likes++;
-            await fs.writeFile(databasePath, JSON.stringify(currentPosts, null, 2));
+            await post.save();
 
             res.status(200).json(post.likes);
         } else {
@@ -66,14 +72,11 @@ app.post('/likePost', async (req, res) => {
     }
 });
 
-app.get('/getPost', (req, res) => {
+app.get('/getPost', async (req, res) => {
     const postId = req.query.id;
 
     try {
-        const databasePath = path.join(__dirname, 'src', 'database.json');
-        const currentPosts = JSON.parse(fs.readFileSync(databasePath, 'utf-8'));
-
-        const post = currentPosts.find(item => item.id === postId);
+        const post = await Post.findById(postId);
         if (post) {
             res.status(200).json(post);
         } else {
@@ -87,7 +90,7 @@ app.get('/getPost', (req, res) => {
 
 // This should be the last route to handle any other routes
 app.get('*', (req, res) => {
-    res.sendFile(path.join(__dirname, 'public', '404.html'));
+    res.sendFile(__dirname + '/public/404.html');
 });
 
 app.listen(3000, () => {
