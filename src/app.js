@@ -9,6 +9,7 @@ const app = express();
 app.use(express.static('public'));
 app.use(bodyParser.json());
 
+// Handle requests for different routes
 app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
@@ -28,7 +29,7 @@ app.post('/addPost', async (req, res) => {
     const postHTML = marked(sanitizedContent);
 
     try {
-        const databasePath = 'src/database.json';
+        const databasePath = path.join(__dirname, 'src', 'database.json');
         const currentPosts = JSON.parse(await fs.readFile(databasePath, 'utf-8'));
 
         const newPost = { content: postHTML, likes: 0, id: new Date().getTime().toString() };
@@ -47,7 +48,7 @@ app.post('/likePost', async (req, res) => {
     const postId = req.body.id;
 
     try {
-        const databasePath = 'src/database.json';
+        const databasePath = path.join(__dirname, 'src', 'database.json');
         const currentPosts = JSON.parse(await fs.readFile(databasePath, 'utf-8'));
 
         const post = currentPosts.find(item => item.id === postId);
@@ -69,7 +70,7 @@ app.get('/getPost', (req, res) => {
     const postId = req.query.id;
 
     try {
-        const databasePath = 'src/database.json';
+        const databasePath = path.join(__dirname, 'src', 'database.json');
         const currentPosts = JSON.parse(fs.readFileSync(databasePath, 'utf-8'));
 
         const post = currentPosts.find(item => item.id === postId);
@@ -84,6 +85,7 @@ app.get('/getPost', (req, res) => {
     }
 });
 
+// This should be the last route to handle any other routes
 app.get('*', (req, res) => {
     res.sendFile(path.join(__dirname, 'public', '404.html'));
 });
