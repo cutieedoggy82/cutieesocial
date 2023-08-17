@@ -3,10 +3,19 @@ const bodyParser = require('body-parser');
 const marked = require('marked');
 const sanitizeHtml = require('sanitize-html');
 const fs = require('fs').promises;
+const path = require('path');
 const app = express();
 
 app.use(express.static('public'));
 app.use(bodyParser.json());
+
+app.get('/', (req, res) => {
+    res.sendFile(path.join(__dirname, 'public', 'index.html'));
+});
+
+app.get('/post', (req, res) => {
+    res.sendFile(path.join(__dirname, 'public', 'post.html'));
+});
 
 app.post('/addPost', async (req, res) => {
     const postContent = req.body.content;
@@ -22,10 +31,12 @@ app.post('/addPost', async (req, res) => {
         const databasePath = 'src/database.json';
         const currentPosts = JSON.parse(await fs.readFile(databasePath, 'utf-8'));
 
-        currentPosts.push({ content: postHTML, likes: 0 });
+        const newPost = { content: postHTML, likes: 0, id: new Date().getTime().toString() };
+        currentPosts.push(newPost);
+
         await fs.writeFile(databasePath, JSON.stringify(currentPosts, null, 2));
 
-        res.status(200).send('Post added successfully');
+        res.status(200).send(newPost);
     } catch (error) {
         console.error('Error adding post:', error);
         res.status(500).send('Error adding post');
@@ -33,13 +44,13 @@ app.post('/addPost', async (req, res) => {
 });
 
 app.post('/likePost', async (req, res) => {
-    const postContent = req.body.content;
+    const postId = req.body.id;
 
     try {
         const databasePath = 'src/database.json';
         const currentPosts = JSON.parse(await fs.readFile(databasePath, 'utf-8'));
 
-        const post = currentPosts.find(item => item.content === postContent);
+        const post = currentPosts.find(item => item.id === postId);
         if (post) {
             post.likes++;
             await fs.writeFile(databasePath, JSON.stringify(currentPosts, null, 2));
@@ -54,9 +65,9 @@ app.post('/likePost', async (req, res) => {
     }
 });
 
-// Add this route to fetch a single post by ID
 app.get('/getPost', (req, res) => {
     const postId = req.query.id;
+
     try {
         const databasePath = 'src/database.json';
         const currentPosts = JSON.parse(fs.readFileSync(databasePath, 'utf-8'));
@@ -73,6 +84,9 @@ app.get('/getPost', (req, res) => {
     }
 });
 
+app.get('*', (req, res) => {
+    res.sendFile(path.join(__dirname, 'public', '404.html'));
+});
 
 app.listen(3000, () => {
     console.log('Server is running on port 3000');
