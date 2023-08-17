@@ -1,0 +1,15 @@
+{
+  "name": "my-kawaii-social-network",
+  "version": "1.0.0",
+  "description": "A super cute social network project",
+  "main": "app.js",
+  "scripts": {
+    "start": "node app.js"
+  },
+  "dependencies": {
+    "express": "^4.17.1",
+    "body-parser": "^1.19.1",
+    "marked": "^3.0.7",
+    "sanitize-html": "^2.4.0"
+  }
+}
