@@ -3,10 +3,12 @@ const bodyParser = require('body-parser');
 const marked = require('marked');
 const sanitizeHtml = require('sanitize-html');
 const mongoose = require('mongoose');
+const cors = require('cors');
 const app = express();
 
 app.use(express.static('public'));
 app.use(bodyParser.json());
+app.use(cors());
 
 // Connect to MongoDB
 mongoose.connect('mongodb://localhost:27017/cutieesocial', {
